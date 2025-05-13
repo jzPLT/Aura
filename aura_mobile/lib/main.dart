@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:calendar_day_view/calendar_day_view.dart';
-import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'features/calendar/services/schedule_service.dart';
+import 'features/calendar/state/calendar_state.dart';
 
 extension DayEventX on DayEvent<String> {
   String getTimeRangeString(BuildContext context) {
@@ -15,7 +17,12 @@ extension DayEventX on DayEvent<String> {
 }
 
 void main() {
-  runApp(const AuraMobileApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => CalendarState(),
+      child: const AuraMobileApp(),
+    ),
+  );
 }
 
 class AuraMobileApp extends StatelessWidget {
@@ -486,8 +493,48 @@ class _LandingPageState extends State<LandingPage>
                                 color: Colors.transparent,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(20),
-                                  onTap: () {
-                                    // API call will be implemented here
+                                  onTap: () async {
+                                    if (_notesController.text.isEmpty) return;
+
+                                    final calendarState =
+                                        context.read<CalendarState>();
+                                    calendarState.setLoading(true);
+
+                                    try {
+                                      final scheduleService = ScheduleService();
+                                      final entry = await scheduleService
+                                          .createScheduleEntry(
+                                            _notesController.text,
+                                          );
+
+                                      calendarState.addScheduleEntries(entry);
+                                      _notesController.clear();
+
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Schedule created successfully',
+                                          ),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      calendarState.setError(e.toString());
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(e.toString()),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    } finally {
+                                      calendarState.setLoading(false);
+                                    }
                                   },
                                   child: const Padding(
                                     padding: EdgeInsets.all(8.0),
