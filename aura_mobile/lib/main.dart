@@ -275,8 +275,20 @@ class _LandingPageState extends State<LandingPage>
                 ),
                 calendarStyle: CalendarStyle(
                   selectedDecoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.blue.shade400, Colors.purple.shade400],
+                    ),
                     shape: BoxShape.circle,
+                  ),
+                  todayDecoration: BoxDecoration(
+                    color: Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade600, width: 1.5),
+                  ),
+                  todayTextStyle: GoogleFonts.outfit(
+                    color: Colors.grey.shade300,
                   ),
                 ),
                 onDaySelected: (selectedDay, focusedDay) {
@@ -337,7 +349,7 @@ class _LandingPageState extends State<LandingPage>
                             config: OverFlowDayViewConfig(
                               currentDate: _selectedDay!,
                               timeGap: 30,
-                              heightPerMin: 1.0,
+                              heightPerMin: 2.0,
                               startOfDay: const TimeOfDay(hour: 0, minute: 0),
                               endOfDay: const TimeOfDay(hour: 23, minute: 59),
                               showCurrentTimeLine: true,
