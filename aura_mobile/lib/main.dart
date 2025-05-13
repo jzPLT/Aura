@@ -23,11 +23,17 @@ class AuraMobileApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      title: 'Aura',
+      theme: ThemeData.dark().copyWith(
+        colorScheme: ColorScheme.dark(
+          primary: Colors.purple.shade300,
+          secondary: Colors.blue.shade300,
+          surface: Colors.grey.shade900,
+          background: Colors.black,
+        ),
+        scaffoldBackgroundColor: Colors.black,
       ),
-      home: const LandingPage(title: 'Flutter Demo Home Page'),
+      home: const LandingPage(title: 'Aura'),
     );
   }
 }
@@ -121,131 +127,6 @@ class _LandingPageState extends State<LandingPage>
     return false;
   }
 
-  void _createNewEvent(BuildContext context, DateTime time) {
-    final TextEditingController titleController = TextEditingController();
-    final ValueNotifier<TimeOfDay> startTime = ValueNotifier(
-      TimeOfDay.fromDateTime(time),
-    );
-    final ValueNotifier<TimeOfDay> endTime = ValueNotifier(
-      TimeOfDay.fromDateTime(time.add(const Duration(hours: 1))),
-    );
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Create New Event'),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Event Title',
-                        hintText: 'Enter event title',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      title: const Text('Start Time'),
-                      trailing: ValueListenableBuilder(
-                        valueListenable: startTime,
-                        builder: (context, time, _) {
-                          return Text(time.format(context));
-                        },
-                      ),
-                      onTap: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: startTime.value,
-                        );
-                        if (picked != null) {
-                          startTime.value = picked;
-                          if (endTime.value.hour < picked.hour ||
-                              (endTime.value.hour == picked.hour &&
-                                  endTime.value.minute <= picked.minute)) {
-                            endTime.value = TimeOfDay(
-                              hour: (picked.hour + 1) % 24,
-                              minute: picked.minute,
-                            );
-                          }
-                        }
-                      },
-                    ),
-                    ListTile(
-                      title: const Text('End Time'),
-                      trailing: ValueListenableBuilder(
-                        valueListenable: endTime,
-                        builder: (context, time, _) {
-                          return Text(time.format(context));
-                        },
-                      ),
-                      onTap: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: endTime.value,
-                        );
-                        if (picked != null &&
-                            (picked.hour > startTime.value.hour ||
-                                (picked.hour == startTime.value.hour &&
-                                    picked.minute > startTime.value.minute))) {
-                          endTime.value = picked;
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty) {
-                  final eventDate = _selectedDay ?? DateTime.now();
-                  final startDateTime = DateTime(
-                    eventDate.year,
-                    eventDate.month,
-                    eventDate.day,
-                    startTime.value.hour,
-                    startTime.value.minute,
-                  );
-                  final endDateTime = DateTime(
-                    eventDate.year,
-                    eventDate.month,
-                    eventDate.day,
-                    endTime.value.hour,
-                    endTime.value.minute,
-                  );
-
-                  setState(() {
-                    _events.add(
-                      DayEvent(
-                        value: titleController.text,
-                        start: startDateTime,
-                        end: endDateTime,
-                      ),
-                    );
-                    _events.sort((a, b) => a.start.compareTo(b.start));
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _editEvent(BuildContext context, DayEvent<String> event) {
     final TextEditingController titleController = TextEditingController(
       text: event.value,
@@ -276,6 +157,7 @@ class _LandingPageState extends State<LandingPage>
                         labelText: 'Event Title',
                         hintText: 'Enter event title',
                       ),
+                      readOnly: true,
                     ),
                     const SizedBox(height: 16),
                     ListTile(
@@ -286,23 +168,6 @@ class _LandingPageState extends State<LandingPage>
                           return Text(time.format(context));
                         },
                       ),
-                      onTap: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: startTime.value,
-                        );
-                        if (picked != null) {
-                          startTime.value = picked;
-                          if (endTime.value.hour < picked.hour ||
-                              (endTime.value.hour == picked.hour &&
-                                  endTime.value.minute <= picked.minute)) {
-                            endTime.value = TimeOfDay(
-                              hour: (picked.hour + 1) % 24,
-                              minute: picked.minute,
-                            );
-                          }
-                        }
-                      },
                     ),
                     ListTile(
                       title: const Text('End Time'),
@@ -312,75 +177,13 @@ class _LandingPageState extends State<LandingPage>
                           return Text(time.format(context));
                         },
                       ),
-                      onTap: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: endTime.value,
-                        );
-                        if (picked != null &&
-                            (picked.hour > startTime.value.hour ||
-                                (picked.hour == startTime.value.hour &&
-                                    picked.minute > startTime.value.minute))) {
-                          endTime.value = picked;
-                        }
-                      },
                     ),
                   ],
                 ),
               );
             },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () {
-                setState(() {
-                  _events.remove(event);
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Delete'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty) {
-                  final eventDate = _selectedDay ?? DateTime.now();
-                  final startDateTime = DateTime(
-                    eventDate.year,
-                    eventDate.month,
-                    eventDate.day,
-                    startTime.value.hour,
-                    startTime.value.minute,
-                  );
-                  final endDateTime = DateTime(
-                    eventDate.year,
-                    eventDate.month,
-                    eventDate.day,
-                    endTime.value.hour,
-                    endTime.value.minute,
-                  );
-
-                  setState(() {
-                    _events.remove(event);
-                    _events.add(
-                      DayEvent(
-                        value: titleController.text,
-                        start: startDateTime,
-                        end: endDateTime,
-                      ),
-                    );
-                    _events.sort((a, b) => a.start.compareTo(b.start));
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+          actions: [],
         );
       },
     );
@@ -399,162 +202,238 @@ class _LandingPageState extends State<LandingPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Column(
-        children: [
-          SizeTransition(
-            sizeFactor: _animation,
-            axisAlignment: -1.0,
-            child: TableCalendar(
-              focusedDay: _focusedDay,
-              firstDay: DateTime(2022),
-              lastDay: DateTime(2026),
-              selectedDayPredicate: (day) {
-                return isSameDay(_selectedDay, day);
-              },
-              headerStyle: HeaderStyle(formatButtonVisible: false),
-              daysOfWeekStyle: DaysOfWeekStyle(
-                weekdayStyle: TextStyle(fontSize: 14),
-                weekendStyle: TextStyle(fontSize: 14),
-              ),
-              calendarStyle: CalendarStyle(
-                selectedDecoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              },
-              calendarBuilders: CalendarBuilders(
-                dowBuilder: (context, day) {
-                  return Center(
-                    child: Text(
-                      DateFormat.E().format(day).substring(0, 1),
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _handleScrollNotification,
-              child: Column(
-                children: [
-                  if (_selectedDay != null) ...[
-                    GestureDetector(
-                      onTap: _toggleMonthView,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          DateFormat.yMMMMd().format(_selectedDay!),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: CalendarDayView.overflow(
-                        events: _getEventsForDay(_selectedDay!),
-                        config: OverFlowDayViewConfig(
-                          currentDate: _selectedDay!,
-                          timeGap: 30,
-                          heightPerMin: 1.0,
-                          startOfDay: const TimeOfDay(hour: 0, minute: 0),
-                          endOfDay: const TimeOfDay(hour: 23, minute: 59),
-                          showCurrentTimeLine: true,
-                          dividerColor: Colors.grey.shade300,
-                          renderRowAsListView: true,
-                        ),
-                        onTimeTap: (time) {
-                          _createNewEvent(context, time);
-                        },
-                        overflowItemBuilder: (
-                          context,
-                          constraints,
-                          index,
-                          event,
-                        ) {
-                          return GestureDetector(
-                            onLongPress: () => _editEvent(context, event),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).primaryColor.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(4),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    event.value,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    event.getTimeRangeString(context),
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+    return SafeArea(
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blue.shade900.withOpacity(0.5),
+                  Colors.purple.shade900.withOpacity(0.5),
+                  Colors.pink.shade300.withOpacity(0.5),
                 ],
               ),
             ),
+            child: AppBar(
+              title: Text(widget.title),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
           ),
-        ],
-      ),
-      floatingActionButton:
-          _selectedDay != null
-              ? FloatingActionButton(
-                onPressed:
-                    () => _createNewEvent(
-                      context,
-                      DateTime(
-                        _selectedDay!.year,
-                        _selectedDay!.month,
-                        _selectedDay!.day,
-                        TimeOfDay.now().hour,
-                        (TimeOfDay.now().minute ~/ 30) * 30,
+        ),
+        body: Column(
+          children: [
+            SizeTransition(
+              sizeFactor: _animation,
+              axisAlignment: -1.0,
+              child: TableCalendar(
+                focusedDay: _focusedDay,
+                firstDay: DateTime(2022),
+                lastDay: DateTime(2026),
+                selectedDayPredicate: (day) {
+                  return isSameDay(_selectedDay, day);
+                },
+                headerStyle: HeaderStyle(formatButtonVisible: false),
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(fontSize: 14),
+                  weekendStyle: TextStyle(fontSize: 14),
+                ),
+                calendarStyle: CalendarStyle(
+                  selectedDecoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                },
+                calendarBuilders: CalendarBuilders(
+                  dowBuilder: (context, day) {
+                    return Center(
+                      child: Text(
+                        DateFormat.E().format(day).substring(0, 1),
+                        style: TextStyle(fontSize: 14),
                       ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _handleScrollNotification,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.blue.shade900.withOpacity(0.05),
+                        Colors.purple.shade900.withOpacity(0.05),
+                        Colors.pink.shade300.withOpacity(0.05),
+                      ],
                     ),
-                child: const Icon(Icons.add),
-              )
-              : null,
+                  ),
+                  child: Column(
+                    children: [
+                      if (_selectedDay != null) ...[
+                        GestureDetector(
+                          onTap: _toggleMonthView,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              DateFormat.yMMMMd().format(_selectedDay!),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: CalendarDayView.overflow(
+                            events: _getEventsForDay(_selectedDay!),
+                            config: OverFlowDayViewConfig(
+                              currentDate: _selectedDay!,
+                              timeGap: 30,
+                              heightPerMin: 1.0,
+                              startOfDay: const TimeOfDay(hour: 0, minute: 0),
+                              endOfDay: const TimeOfDay(hour: 23, minute: 59),
+                              showCurrentTimeLine: true,
+                              dividerColor: Colors.grey.shade300,
+                              renderRowAsListView: true,
+                            ),
+                            overflowItemBuilder: (
+                              context,
+                              constraints,
+                              index,
+                              event,
+                            ) {
+                              return GestureDetector(
+                                onTap: () => _editEvent(context, event),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.blue.shade800,
+                                        Colors.purple.shade800,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 9,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        event.value,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        event.getTimeRangeString(context),
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                      Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.blue.shade500.withOpacity(0.2),
+                              Colors.purple.shade300.withOpacity(0.2),
+                              Colors.pink.shade200.withOpacity(0.2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(28.0),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.1),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search events...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(28.0),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16.0,
+                              horizontal: 20.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
