@@ -1,7 +1,10 @@
 import 'package:aura_mobile/features/calendar/components/calendar_view.dart';
 import 'package:aura_mobile/features/calendar/components/schedule_view.dart';
+import 'package:aura_mobile/features/calendar/services/schedule_service.dart';
+import 'package:aura_mobile/features/calendar/state/calendar_state.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key, required this.title});
@@ -20,6 +23,7 @@ class _LandingPageState extends State<LandingPage>
   late Animation<double> _animation;
   bool _isMonthViewVisible = true;
   bool _isAnimating = false;
+  final TextEditingController _notesController = TextEditingController();
 
   @override
   void initState() {
@@ -45,6 +49,7 @@ class _LandingPageState extends State<LandingPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -102,9 +107,9 @@ class _LandingPageState extends State<LandingPage>
                     end: Alignment.bottomCenter,
                     stops: const [0.0, 0.3, 0.7, 1.0],
                     colors: [
+                      Colors.black.withOpacity(1.0),
                       Colors.black.withOpacity(0.7),
                       Colors.black.withOpacity(0.3),
-                      Colors.black.withOpacity(0.1),
                       Colors.black.withOpacity(0.0),
                     ],
                   ),
@@ -140,23 +145,118 @@ class _LandingPageState extends State<LandingPage>
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: _handleScrollNotification,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.blue.shade900.withOpacity(0.05),
-                        Colors.purple.shade900.withOpacity(0.05),
-                        Colors.pink.shade300.withOpacity(0.05),
-                      ],
+                child: ScheduleView(
+                  selectedDay: _selectedDay,
+                  onDateTap: _toggleMonthView,
+                ),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.blue.shade500.withOpacity(0.2),
+                    Colors.purple.shade300.withOpacity(0.2),
+                    Colors.pink.shade200.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(28.0),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.1),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _notesController,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      decoration: InputDecoration(
+                        hintText: 'Add a goal...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(28.0),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16.0,
+                          horizontal: 20.0,
+                        ),
+                      ),
                     ),
                   ),
-                  child: ScheduleView(
-                    selectedDay: _selectedDay,
-                    onDateTap: _toggleMonthView,
+                  Container(
+                    margin: const EdgeInsets.only(right: 8.0),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.blue.shade800, Colors.purple.shade800],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () async {
+                          if (_notesController.text.isEmpty) return;
+
+                          final calendarState = context.read<CalendarState>();
+                          calendarState.setLoading(true);
+
+                          try {
+                            final scheduleService = ScheduleService();
+                            final entry = await scheduleService
+                                .createScheduleEntry(_notesController.text);
+
+                            calendarState.addScheduleEntries(entry);
+                            _notesController.clear();
+
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Schedule created successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } catch (e) {
+                            calendarState.setError(e.toString());
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString()),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } finally {
+                            calendarState.setLoading(false);
+                          }
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Icon(Icons.add, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
