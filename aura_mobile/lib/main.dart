@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:calendar_day_view/calendar_day_view.dart';
 import 'package:flutter/rendering.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 extension DayEventX on DayEvent<String> {
   String getTimeRangeString(BuildContext context) {
@@ -32,6 +33,9 @@ class AuraMobileApp extends StatelessWidget {
           background: Colors.black,
         ),
         scaffoldBackgroundColor: Colors.black,
+        textTheme: GoogleFonts.outfitTextTheme(
+          Theme.of(context).textTheme,
+        ).apply(bodyColor: Colors.white, displayColor: Colors.white),
       ),
       home: const LandingPage(title: 'Aura'),
     );
@@ -55,6 +59,7 @@ class _LandingPageState extends State<LandingPage>
   late Animation<double> _animation;
   bool _isMonthViewVisible = true;
   bool _isAnimating = false;
+  final TextEditingController _notesController = TextEditingController();
 
   final List<DayEvent<String>> _events = [
     DayEvent(
@@ -98,6 +103,7 @@ class _LandingPageState extends State<LandingPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -206,23 +212,48 @@ class _LandingPageState extends State<LandingPage>
       child: Scaffold(
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.blue.shade900.withOpacity(0.5),
-                  Colors.purple.shade900.withOpacity(0.5),
-                  Colors.pink.shade300.withOpacity(0.5),
-                ],
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.blue.shade900,
+                      Colors.purple.shade900,
+                      Colors.pink.shade300,
+                    ],
+                  ),
+                ),
               ),
-            ),
-            child: AppBar(
-              title: Text(widget.title),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-            ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.3, 0.7, 1.0],
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.1),
+                      Colors.black.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+              AppBar(
+                title: Text(
+                  widget.title,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 24,
+                  ),
+                ),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+              ),
+            ],
           ),
         ),
         body: Column(
@@ -239,8 +270,8 @@ class _LandingPageState extends State<LandingPage>
                 },
                 headerStyle: HeaderStyle(formatButtonVisible: false),
                 daysOfWeekStyle: DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(fontSize: 14),
-                  weekendStyle: TextStyle(fontSize: 14),
+                  weekdayStyle: GoogleFonts.outfit(fontSize: 14),
+                  weekendStyle: GoogleFonts.outfit(fontSize: 14),
                 ),
                 calendarStyle: CalendarStyle(
                   selectedDecoration: BoxDecoration(
@@ -259,7 +290,7 @@ class _LandingPageState extends State<LandingPage>
                     return Center(
                       child: Text(
                         DateFormat.E().format(day).substring(0, 1),
-                        style: TextStyle(fontSize: 14),
+                        style: GoogleFonts.outfit(fontSize: 14),
                       ),
                     );
                   },
@@ -291,7 +322,7 @@ class _LandingPageState extends State<LandingPage>
                             padding: const EdgeInsets.all(16.0),
                             child: Text(
                               DateFormat.yMMMMd().format(_selectedDay!),
-                              style: const TextStyle(
+                              style: GoogleFonts.outfit(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -350,7 +381,7 @@ class _LandingPageState extends State<LandingPage>
                                     children: [
                                       Text(
                                         event.value,
-                                        style: const TextStyle(
+                                        style: GoogleFonts.outfit(
                                           color: Colors.white,
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
@@ -360,7 +391,7 @@ class _LandingPageState extends State<LandingPage>
                                       const SizedBox(height: 4),
                                       Text(
                                         event.getTimeRangeString(context),
-                                        style: TextStyle(
+                                        style: GoogleFonts.outfit(
                                           color: Colors.white.withOpacity(0.9),
                                           fontSize: 12,
                                         ),
@@ -401,29 +432,63 @@ class _LandingPageState extends State<LandingPage>
                             ),
                           ],
                         ),
-                        child: TextField(
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Search events...',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _notesController,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Add a note...',
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(28.0),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16.0,
+                                    horizontal: 20.0,
+                                  ),
+                                ),
+                              ),
                             ),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: Colors.white.withOpacity(0.7),
+                            Container(
+                              margin: const EdgeInsets.only(right: 8.0),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.blue.shade800,
+                                    Colors.purple.shade800,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () {
+                                    // API call will be implemented here
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28.0),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 16.0,
-                              horizontal: 20.0,
-                            ),
-                          ),
+                          ],
                         ),
                       ),
                     ],
