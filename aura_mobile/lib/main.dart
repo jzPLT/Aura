@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:calendar_day_view/calendar_day_view.dart';
+import 'package:flutter/rendering.dart';
 
 extension DayEventX on DayEvent<String> {
   String getTimeRangeString(BuildContext context) {
@@ -40,9 +41,14 @@ class LandingPage extends StatefulWidget {
   State<LandingPage> createState() => _LandingPageState();
 }
 
-class _LandingPageState extends State<LandingPage> {
+class _LandingPageState extends State<LandingPage>
+    with SingleTickerProviderStateMixin {
   DateTime? _selectedDay;
   DateTime _focusedDay = DateTime.now();
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  bool _isMonthViewVisible = true;
+  bool _isAnimating = false;
 
   final List<DayEvent<String>> _events = [
     DayEvent(
@@ -61,6 +67,59 @@ class _LandingPageState extends State<LandingPage> {
       end: DateTime(2025, 5, 13, 15, 30),
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _animation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    )..addStatusListener((status) {
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
+        _isAnimating = false;
+      }
+    });
+
+    // Start with month view visible
+    _animationController.value = 0.0;
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMonthView() {
+    if (_isAnimating) return;
+    _isAnimating = true;
+    setState(() {
+      _isMonthViewVisible = !_isMonthViewVisible;
+      if (_isMonthViewVisible) {
+        _animationController.reverse();
+      } else {
+        _animationController.forward();
+      }
+    });
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (_isAnimating) return false;
+
+    if (notification is ScrollStartNotification) {
+      // If scrolling starts and we're going up, hide the month view
+      if (_isMonthViewVisible) {
+        _toggleMonthView();
+        return true;
+      }
+    }
+    return false;
+  }
 
   void _createNewEvent(BuildContext context, DateTime time) {
     final TextEditingController titleController = TextEditingController();
@@ -345,10 +404,12 @@ class _LandingPageState extends State<LandingPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            TableCalendar(
+      body: Column(
+        children: [
+          SizeTransition(
+            sizeFactor: _animation,
+            axisAlignment: -1.0,
+            child: TableCalendar(
               focusedDay: _focusedDay,
               firstDay: DateTime(2022),
               lastDay: DateTime(2026),
@@ -383,21 +444,27 @@ class _LandingPageState extends State<LandingPage> {
                 },
               ),
             ),
-            if (_selectedDay != null) ...[
-              Container(
-                height: MediaQuery.of(context).size.height * 0.7,
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat.yMMMMd().format(_selectedDay!),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+          ),
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleScrollNotification,
+              child: Column(
+                children: [
+                  if (_selectedDay != null) ...[
+                    GestureDetector(
+                      onTap: _toggleMonthView,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          DateFormat.yMMMMd().format(_selectedDay!),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
                     Expanded(
                       child: CalendarDayView.overflow(
                         events: _getEventsForDay(_selectedDay!),
@@ -465,11 +532,11 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton:
           _selectedDay != null
