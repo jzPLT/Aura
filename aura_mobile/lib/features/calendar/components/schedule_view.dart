@@ -9,10 +9,10 @@ class ScheduleView extends StatefulWidget {
   final VoidCallback onDateTap;
 
   const ScheduleView({
-    Key? key,
+    super.key,
     required this.selectedDay,
     required this.onDateTap,
-  }) : super(key: key);
+  });
 
   @override
   State<ScheduleView> createState() => _ScheduleViewState();

@@ -10,12 +10,12 @@ class CalendarView extends StatelessWidget {
   final Animation<double> animation;
 
   const CalendarView({
-    Key? key,
+    super.key,
     required this.focusedDay,
     this.selectedDay,
     required this.onDaySelected,
     required this.animation,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
