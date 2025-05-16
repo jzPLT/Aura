@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>287670988127-usgigl1ekt7sev15uefj3t9d9sm4pn05.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.287670988127-usgigl1ekt7sev15uefj3t9d9sm4pn05</string>
+	<key>API_KEY</key>
+	<string>AIzaSyD27R3VkDeKZjKQeVnCfl_djQcIKu8Tkow</string>
+	<key>GCM_SENDER_ID</key>
+	<string>287670988127</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.aura.mobile.auraMobile</string>
+	<key>PROJECT_ID</key>
+	<string>aura-80ded</string>
+	<key>STORAGE_BUCKET</key>
+	<string>aura-80ded.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:287670988127:ios:8389a34139b8c3565b5aea</string>
+</dict>
+</plist>

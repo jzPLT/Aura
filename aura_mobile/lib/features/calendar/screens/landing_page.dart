@@ -2,6 +2,7 @@ import 'package:aura_mobile/features/calendar/components/calendar_view.dart';
 import 'package:aura_mobile/features/calendar/components/schedule_view.dart';
 import 'package:aura_mobile/features/calendar/services/schedule_service.dart';
 import 'package:aura_mobile/features/calendar/state/calendar_state.dart';
+import 'package:aura_mobile/features/auth/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -125,6 +126,14 @@ class _LandingPageState extends State<LandingPage>
                 ),
                 backgroundColor: Colors.transparent,
                 elevation: 0,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    onPressed: () {
+                      context.read<AuthProvider>().signOut();
+                    },
+                  ),
+                ],
               ),
             ],
           ),
