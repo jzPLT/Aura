@@ -191,21 +191,39 @@ class _LandingPageState extends State<LandingPage>
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _notesController,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      decoration: InputDecoration(
-                        hintText: 'Add a goal...',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                    child: Theme(
+                      // Override the global input decoration theme
+                      data: Theme.of(context).copyWith(
+                        inputDecorationTheme: const InputDecorationTheme(),
+                      ),
+                      child: TextField(
+                        controller: _notesController,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28.0),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16.0,
-                          horizontal: 20.0,
+                        decoration: InputDecoration(
+                          hintText: 'Add a goal...',
+                          hintStyle: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28.0),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28.0),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28.0),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16.0,
+                            horizontal: 20.0,
+                          ),
+                          filled: false,
                         ),
                       ),
                     ),

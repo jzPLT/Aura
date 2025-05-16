@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:aura_mobile/features/auth/providers/auth_provider.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:aura_mobile/core/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -70,13 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blue.shade900, Colors.purple.shade900],
-          ),
-        ),
+        decoration: AppTheme.gradientBackground,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -89,39 +83,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'Aura',
-                      style: GoogleFonts.outfit(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: AppTheme.titleStyle,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 48),
                     TextFormField(
                       controller: _emailController,
-                      decoration: InputDecoration(
+                      decoration: AppTheme.inputDecoration.copyWith(
                         labelText: 'Email',
-                        labelStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white),
-                        ),
                       ),
-                      style: const TextStyle(color: Colors.white),
+                      style: AppTheme.bodyStyle,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -138,27 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
-                      decoration: InputDecoration(
+                      decoration: AppTheme.inputDecoration.copyWith(
                         labelText: 'Password',
-                        labelStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white),
-                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -173,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                       ),
-                      style: const TextStyle(color: Colors.white),
+                      style: AppTheme.bodyStyle,
                       obscureText: _obscurePassword,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -188,14 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 24),
                     FilledButton(
                       onPressed: authProvider.isLoading ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.purple.shade900,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child:
                           authProvider.isLoading
                               ? const SizedBox(
@@ -210,56 +154,40 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: const TextStyle(fontSize: 16),
                               ),
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _toggleAuthMode,
-                      child: Text(
-                        _isSignUp
-                            ? 'Already have an account? Sign in'
-                            : "Don't have an account? Sign up",
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'OR',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: Colors.white.withOpacity(0.3),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.white.withOpacity(0.3),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     OutlinedButton(
                       onPressed:
                           authProvider.isLoading ? null : _signInWithGoogle,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.white.withOpacity(0.1),
-                        side: BorderSide(color: Colors.white.withOpacity(0.5)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -274,6 +202,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(fontSize: 16),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _toggleAuthMode,
+                      child: Text(
+                        _isSignUp
+                            ? 'Already have an account? Sign in'
+                            : "Don't have an account? Sign up",
                       ),
                     ),
                   ],
