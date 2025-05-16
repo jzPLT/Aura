@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
-import 'package:calendar_day_view/calendar_day_view.dart';
 
 class ScheduleEntry {
   final String type;
