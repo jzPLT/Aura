@@ -1,0 +1,101 @@
+@startuml "Simplified Schedule Management Database Schema"
+' Styling
+skinparam linetype ortho
+skinparam padding 2
+skinparam roundcorner 5
+skinparam class {
+    BackgroundColor White
+    ArrowColor #2688d4
+    BorderColor #2688d4
+}
+
+' Define styling macros
+!define table(x) class x << (T,#5DADE2) >>
+!define pk(x) <b><&key> x</b>
+!define fk(x) <&key> x
+!define not_null(x) <b>x</b>
+!define null(x) <i>x</i>
+
+' ENUM definitions
+note as EnumDefinitions
+  **frequency_period**
+    'day', 'week', 'month', 'year', 'never'
+
+  **dependency_type**
+    'before', 'after', 'during', 'not_same_day', 
+    'same_day', 'not_same_week', 'same_week', 
+    'not_same_month', 'same_month'
+end note
+
+table(users) {
+    pk(uid): VARCHAR(255)
+    not_null(email): VARCHAR(255) UNIQUE
+    null(display_name): VARCHAR(255)
+    null(preferences_theme): VARCHAR(50)
+    null(preferences_notifications): BOOLEAN
+    null(default_duration_for_scheduling): INTEGER
+    not_null(created_at): TIMESTAMP
+    not_null(updated_at): TIMESTAMP
+}
+
+table(static_entries) {
+    pk(id): SERIAL
+    fk(user_uid): VARCHAR(255)
+    null(original_input_text): TEXT
+    not_null(description): VARCHAR(255)
+    null(starting_datetime): TIMESTAMP
+    null(ending_datetime): TIMESTAMP
+    null(frequency_per_period): INTEGER
+    not_null(frequency_period): VARCHAR(10)
+    not_null(created_at): TIMESTAMP
+    not_null(updated_at): TIMESTAMP
+    null(deleted_at): TIMESTAMP
+}
+note bottom of static_entries: Default frequency_period = 'never'
+
+table(dynamic_entries) {
+    pk(id): SERIAL
+    fk(user_uid): VARCHAR(255)
+    null(original_input_text): TEXT
+    not_null(description_of_entry): VARCHAR(255)
+    null(starting_datetime): TIMESTAMP
+    null(ending_datetime): TIMESTAMP
+    null(frequency_per_period): INTEGER
+    null(frequency_period): VARCHAR(10)
+    null(dependency_name): VARCHAR(255)
+    null(dependency_type): VARCHAR(50)
+    not_null(created_at): TIMESTAMP
+    not_null(updated_at): TIMESTAMP
+    null(deleted_at): TIMESTAMP
+}
+
+table(resulting_entries) {
+    pk(id): SERIAL
+    fk(user_uid): VARCHAR(255)
+    fk(origin_static_entry_id): INTEGER
+    fk(origin_dynamic_entry_id): INTEGER
+    not_null(description): VARCHAR(255)
+    not_null(starting_datetime): TIMESTAMP
+    not_null(ending_datetime): TIMESTAMP
+    not_null(created_at): TIMESTAMP
+    not_null(updated_at): TIMESTAMP
+    null(deleted_at): TIMESTAMP
+}
+note bottom of resulting_entries: Check: at least one origin ID is NOT NULL
+
+' Relationships
+users "1" *-- "many" static_entries : user_uid
+users "1" *-- "many" dynamic_entries : user_uid
+users "1" *-- "many" resulting_entries : user_uid
+
+static_entries "0..1" o-- "many" resulting_entries : origin_static_entry_id
+dynamic_entries "0..1" o-- "many" resulting_entries : origin_dynamic_entry_id
+
+' Migration tracking table (for reference)
+table(migrations) {
+    pk(id): SERIAL
+    not_null(migration_name): VARCHAR(255)
+    not_null(executed_at): TIMESTAMP
+}
+
+@enduml
