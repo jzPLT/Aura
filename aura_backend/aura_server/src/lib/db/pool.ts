@@ -1,0 +1,96 @@
+import { Pool, PoolConfig, Client, PoolClient, QueryConfig, QueryResult, QueryResultRow  } from 'pg';
+
+const config: PoolConfig = {
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  host: process.env.POSTGRES_HOST,
+  port: parseInt(process.env.POSTGRES_PORT || '5432'),
+  database: process.env.POSTGRES_DB,
+  max: parseInt(process.env.POSTGRES_MAX_CONNECTIONS || '20'),
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+};
+
+// Create a new Pool instance
+const pool = new Pool(config);
+
+pool.on('connect', (client: PoolClient) => {
+  console.log('Client connected to the database');
+});
+
+pool.on('remove', (client: PoolClient) => {
+  console.log('Client removed from the database pool');
+});
+
+pool.on('error', (err: Error, client: PoolClient) => {
+  console.error('Unexpected error on idle client', err);
+  // process.exit(-1); // Don't exit process in Next.js API routes, handle gracefully
+});
+
+// Function to get a client from the pool
+export async function getClient(): Promise<PoolClient> {
+  const client = await pool.connect();
+  // Store original query and release methods
+  const originalQuery = client.query;
+  const originalRelease = client.release;
+
+  // Overwrite client.query to log queries and handle errors
+  // We explicitly type the arguments to match common async usage of client.query
+  client.query = async <R extends QueryResultRow = any, I extends any[] = any[]>(
+    queryTextOrConfig: string | QueryConfig<I>, // Matches text or config object
+    values?: I // Matches parameter values
+  ): Promise<QueryResult<R>> => {
+    try {
+      // Call the original query method
+      const result = await originalQuery(queryTextOrConfig as any, values as any); // Type assertion needed here
+      return result as unknown as QueryResult<R>; // Cast result to expected type
+    } catch (error: any) { // Catch as any for broad error handling
+      console.error('Error executing query:', error);
+      throw error;
+    }
+  };
+
+  // Overwrite client.release to log releases
+  client.release = (err?: Error | boolean) => {
+    if (err) {
+        console.log('Releasing client due to error:', err);
+    }
+    originalRelease.call(client, err);
+  };
+
+  return client;
+}
+
+// Function to execute a query using a pooled connection
+export async function executeQuery<T>(
+  queryText: string,
+  params?: any[]
+): Promise<T[]> {
+  const client = await getClient();
+  try {
+    const result = await client.query(queryText, params); // This query() is now the wrapped one
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
+// Add to pool.ts
+export async function closePool(): Promise<void> {
+  await pool.end();
+  console.log('Database pool closed');
+}
+
+// Handle process termination
+process.on('SIGINT', async () => {
+  await closePool();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await closePool();
+  process.exit(0);
+});
+
+// Export the pool instance for direct use when needed
+export default pool;

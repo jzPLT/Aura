@@ -1,25 +1,58 @@
-export type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-export type TimePeriod = 'day' | 'week' | 'month' | 'year';
+// Schedule-specific types and API interfaces
 
-export interface ScheduleEntry {
-  activity: string;
-  type: 'recurring' | 'oneTime';
-  // For one-time events
-  datetime?: string;  // ISO datetime string
-  // For recurring events
-  schedule?: {
-    days?: Day[];
-    startDateTime?: string;  // ISO datetime string for first occurrence
-    startTime?: string;   // HH:mm format for daily pattern
-    endTime?: string;     // HH:mm format for daily pattern
-    frequency?: {
-      times: number;
-      period: TimePeriod;
-    };
+import { StaticEntry, DynamicEntry, ResultingEntry } from '../user/types';
+
+export type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export type TimePeriod = 'day' | 'week' | 'month' | 'year' | 'never';
+
+// Combined schedule view for frontend
+export interface ScheduleOverview {
+  staticEntries: StaticEntry[];
+  dynamicEntries: DynamicEntry[];
+  resultingEntries: ResultingEntry[];
+}
+
+// For AI processing input
+export interface ScheduleInput {
+  userUid: string;
+  originalText: string;
+  timeRange?: {
+    start?: string; // ISO date string
+    end?: string;   // ISO date string
   };
-  // For activities that depend on other activities
-  dependsOn?: {
-    activity: string;
-    relation: 'before' | 'after' | 'not_same_day';
+}
+
+// AI parsing result - what the LLM returns
+export interface ParsedScheduleEntry {
+  type: 'static' | 'dynamic';
+  description: string;
+  startingDatetime?: string;
+  endingDatetime?: string;
+  frequency?: {
+    perPeriod: number;
+    period: 'day' | 'week' | 'month' | 'year' | 'never';
+  };
+  dependency?: {
+    name: string;
+    type: 'before' | 'after' | 'during' | 'not_same_day' | 'same_day' | 'not_same_week' | 'same_week' | 'not_same_month' | 'same_month';
+  };
+}
+
+// API response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
