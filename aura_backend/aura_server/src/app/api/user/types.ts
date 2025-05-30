@@ -147,3 +147,6 @@ export interface ResultingEntryRow {
   updated_at: Date;
   deleted_at: Date | null;
 }
+
+// Alias for consistency with service usage
+export type UserDbRow = UserRow;

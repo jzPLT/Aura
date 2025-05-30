@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserData } from '../types';
 import { auth } from '@/lib/firebase/admin';
-
-// Mock database for now - in production, this would be your database
-const mockUserData: Record<string, UserData> = {};
+import { UserService } from '../service';
 
 export async function GET(
   request: NextRequest,
@@ -34,24 +32,19 @@ export async function GET(
         );
       }
 
-      // In production, fetch from your database
-      // For now, return mock data or create it if it doesn't exist
-      if (!mockUserData[params.uid]) {
-        mockUserData[params.uid] = {
-          uid: params.uid,
-          email: decodedToken.email || '',
-          displayName: decodedToken.name,
-          preferencesTheme: 'dark',
-          preferencesNotifications: true,
-          defaultDurationForScheduling: 30,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+      // Try to get user from database
+      const userData = await UserService.getUserByUid(params.uid);
+      
+      if (!userData) {
+        return NextResponse.json(
+          { error: 'User does not exist' },
+          { status: 404 }
+        );
       }
 
       return NextResponse.json({
         success: true,
-        data: mockUserData[params.uid],
+        data: userData,
       });
     } catch (error) {
       console.error('Token verification failed:', error);
@@ -99,27 +92,26 @@ export async function PUT(
       }
 
       // Parse the request body
-      const userData = await request.json();
+      const requestData = await request.json();
 
-      // Create or update user data
-      const updatedUserData: UserData = {
+      // Prepare user data for upsert (create or update)
+      const userData: Omit<UserData, 'createdAt' | 'updatedAt'> = {
         uid: params.uid,
-        email: decodedToken.email || userData.email,
-        displayName: userData.displayName || decodedToken.name,
-        preferencesTheme: userData.preferencesTheme || 'dark',
-        preferencesNotifications: userData.preferencesNotifications !== undefined 
-          ? userData.preferencesNotifications 
+        email: decodedToken.email || requestData.email,
+        displayName: requestData.displayName || decodedToken.name,
+        preferencesTheme: requestData.preferencesTheme || 'dark',
+        preferencesNotifications: requestData.preferencesNotifications !== undefined 
+          ? requestData.preferencesNotifications 
           : true,
-        defaultDurationForScheduling: userData.defaultDurationForScheduling || 30,
-        createdAt: mockUserData[params.uid]?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        defaultDurationForScheduling: requestData.defaultDurationForScheduling || 30,
       };
 
-      mockUserData[params.uid] = updatedUserData;
+      // Use upsert to create or update the user
+      const updatedUser = await UserService.upsertUser(userData);
 
       return NextResponse.json({
         success: true,
-        data: updatedUserData,
+        data: updatedUser,
       });
     } catch (error) {
       console.error('Token verification failed:', error);

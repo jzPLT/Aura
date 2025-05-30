@@ -19,6 +19,47 @@ export function userRowToUserData(row: UserRow): UserData {
   };
 }
 
+// Alias for consistency with service usage
+export const transformUserDbRowToUserData = userRowToUserData;
+
+export function validateUserData(userData: Partial<UserData>): UserData {
+  const errors: string[] = [];
+  
+  if (!userData.uid?.trim()) {
+    errors.push('User UID is required');
+  }
+  
+  if (!userData.email?.trim()) {
+    errors.push('Email is required');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+    errors.push('Valid email is required');
+  }
+  
+  if (userData.preferencesTheme && !['light', 'dark', 'system'].includes(userData.preferencesTheme)) {
+    errors.push('Theme must be light, dark, or system');
+  }
+  
+  if (userData.defaultDurationForScheduling !== undefined && 
+      (userData.defaultDurationForScheduling < 1 || userData.defaultDurationForScheduling > 1440)) {
+    errors.push('Default duration must be between 1 and 1440 minutes');
+  }
+  
+  if (errors.length > 0) {
+    throw new Error(`Validation failed: ${errors.join(', ')}`);
+  }
+  
+  return {
+    uid: userData.uid!,
+    email: userData.email!,
+    displayName: userData.displayName,
+    preferencesTheme: userData.preferencesTheme || 'dark',
+    preferencesNotifications: userData.preferencesNotifications !== undefined ? userData.preferencesNotifications : true,
+    defaultDurationForScheduling: userData.defaultDurationForScheduling || 30,
+    createdAt: userData.createdAt || new Date().toISOString(),
+    updatedAt: userData.updatedAt || new Date().toISOString(),
+  };
+}
+
 export function userDataToUserRow(userData: UserData): Partial<UserRow> {
   return {
     uid: userData.uid,
