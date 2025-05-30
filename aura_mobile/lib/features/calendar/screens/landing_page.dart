@@ -127,11 +127,84 @@ class _LandingPageState extends State<LandingPage>
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.logout),
-                    onPressed: () {
-                      context.read<AuthProvider>().signOut();
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'logout':
+                          context.read<AuthProvider>().signOut();
+                          break;
+                        case 'delete_account':
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: const Text('Delete Account'),
+                                  content: const Text(
+                                    'Are you sure you want to delete your account? This action cannot be undone.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, true),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                          );
+
+                          if (confirmed == true && mounted) {
+                            try {
+                              await context
+                                  .read<AuthProvider>()
+                                  .deleteAccount();
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.toString()),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                          break;
+                      }
                     },
+                    itemBuilder:
+                        (context) => [
+                          const PopupMenuItem(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout),
+                                SizedBox(width: 8),
+                                Text('Sign Out'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete_account',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_forever, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Delete Account',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                   ),
                 ],
               ),

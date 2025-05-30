@@ -76,6 +76,21 @@ class AuthService {
     await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
   }
 
+  // Delete Account
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'No user is currently signed in';
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      // Handle specific case where user needs to re-authenticate
+      if (e.code == 'requires-recent-login') {
+        throw 'Please sign out and sign in again to delete your account.';
+      }
+      throw _handleAuthException(e);
+    }
+  }
+
   // Password Reset
   Future<void> resetPassword(String email) async {
     try {

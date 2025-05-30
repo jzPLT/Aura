@@ -15,6 +15,11 @@ class AuraMobileApp extends StatelessWidget {
       theme: AppTheme.darkTheme,
       home: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
+          // Set the context for the AuthProvider to handle user data
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            authProvider.setContext(context);
+          });
+
           // Show landing page if authenticated, login screen otherwise
           return authProvider.isAuthenticated
               ? const LandingPage(title: 'Aura')
