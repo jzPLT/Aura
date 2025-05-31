@@ -8,6 +8,8 @@ export async function GET(
   { params }: { params: { uid: string } }
 ) {
   try {
+    const { uid } = await params;
+
     // Get the Authorization header
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -25,7 +27,7 @@ export async function GET(
       const decodedToken = await auth.verifyIdToken(idToken);
       
       // Check if the token UID matches the requested UID
-      if (decodedToken.uid !== params.uid) {
+      if (decodedToken.uid !== uid) {
         return NextResponse.json(
           { error: 'Unauthorized access' },
           { status: 403 }
@@ -33,7 +35,7 @@ export async function GET(
       }
 
       // Try to get user from database
-      const userData = await UserService.getUserByUid(params.uid);
+      const userData = await UserService.getUserByUid(uid);
       
       if (!userData) {
         return NextResponse.json(
@@ -67,6 +69,8 @@ export async function PUT(
   { params }: { params: { uid: string } }
 ) {
   try {
+    const { uid } = await params;
+
     // Get the Authorization header
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -84,7 +88,7 @@ export async function PUT(
       const decodedToken = await auth.verifyIdToken(idToken);
       
       // Check if the token UID matches the requested UID
-      if (decodedToken.uid !== params.uid) {
+      if (decodedToken.uid !== uid) {
         return NextResponse.json(
           { error: 'Unauthorized access' },
           { status: 403 }
@@ -96,7 +100,7 @@ export async function PUT(
 
       // Prepare user data for upsert (create or update)
       const userData: Omit<UserData, 'createdAt' | 'updatedAt'> = {
-        uid: params.uid,
+        uid: uid,
         email: decodedToken.email || requestData.email,
         displayName: requestData.displayName || decodedToken.name,
         preferencesTheme: requestData.preferencesTheme || 'dark',

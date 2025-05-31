@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       // Create the user in the database
       const createdUser = await UserService.createUser(newUserData);
 
+      console.log('✅ SIGNUP API COMPLETED - User created successfully');
       return NextResponse.json({
         success: true,
         message: 'User created successfully',

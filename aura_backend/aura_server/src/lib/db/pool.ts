@@ -30,32 +30,38 @@ pool.on('error', (err: Error, client: PoolClient) => {
 // Function to get a client from the pool
 export async function getClient(): Promise<PoolClient> {
   const client = await pool.connect();
-  // Store original query and release methods
-  const originalQuery = client.query;
-  const originalRelease = client.release;
+  
+  // Store reference to original methods with proper binding
+  const originalQuery = client.query.bind(client);
+  const originalRelease = client.release.bind(client);
 
-  // Overwrite client.query to log queries and handle errors
-  // We explicitly type the arguments to match common async usage of client.query
-  client.query = async <R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryTextOrConfig: string | QueryConfig<I>, // Matches text or config object
-    values?: I // Matches parameter values
-  ): Promise<QueryResult<R>> => {
+  // Simple wrapper that preserves all query method signatures
+  const wrappedQuery = async (...args: Parameters<typeof originalQuery>) => {
     try {
-      // Call the original query method
-      const result = await originalQuery(queryTextOrConfig as any, values as any); // Type assertion needed here
-      return result as unknown as QueryResult<R>; // Cast result to expected type
-    } catch (error: any) { // Catch as any for broad error handling
+      // Log query for debugging
+      const queryText = typeof args[0] === 'string' 
+        ? args[0] 
+        : (args[0] as any)?.text || 'Complex Query';
+      console.log('Executing query:', queryText.slice(0, 100) + (queryText.length > 100 ? '...' : ''));
+      
+      // Call original query with all arguments and await the result
+      const result = await originalQuery(...args);
+      return result;
+    } catch (error: any) {
       console.error('Error executing query:', error);
       throw error;
     }
   };
 
-  // Overwrite client.release to log releases
+  // Replace the query method
+  client.query = wrappedQuery as any;
+
+  // Wrapper for release method
   client.release = (err?: Error | boolean) => {
     if (err) {
-        console.log('Releasing client due to error:', err);
+      console.log('Releasing client due to error:', err);
     }
-    originalRelease.call(client, err);
+    originalRelease(err);
   };
 
   return client;

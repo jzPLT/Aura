@@ -10,16 +10,16 @@ export class UserService {
     try {
       const query = `
         SELECT 
-          uid,
+          firebase_uid as uid,
           email,
           display_name,
           preferences_theme,
           preferences_notifications,
-          default_duration_for_scheduling,
+          schedule_settings_default_duration as default_duration_for_scheduling,
           created_at,
           updated_at
         FROM users 
-        WHERE uid = $1
+        WHERE firebase_uid = $1
       `;
       
       const rows = await executeQuery<UserDbRow>(query, [uid]);
@@ -40,27 +40,28 @@ export class UserService {
    */
   static async createUser(userData: Omit<UserData, 'createdAt' | 'updatedAt'>): Promise<UserData> {
     try {
+      console.log(`🔍 [UserService.createUser] Creating user for UID: ${userData.uid}`);
       // Validate the user data
       const validatedData = validateUserData(userData);
       
       const query = `
         INSERT INTO users (
-          uid,
+          firebase_uid,
           email,
           display_name,
           preferences_theme,
           preferences_notifications,
-          default_duration_for_scheduling,
+          schedule_settings_default_duration,
           created_at,
           updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING 
-          uid,
+          firebase_uid as uid,
           email,
           display_name,
           preferences_theme,
           preferences_notifications,
-          default_duration_for_scheduling,
+          schedule_settings_default_duration as default_duration_for_scheduling,
           created_at,
           updated_at
       `;
@@ -80,6 +81,7 @@ export class UserService {
         throw new Error('User creation failed - no data returned');
       }
       
+      console.log(`✅ [UserService.createUser] User created successfully for UID: ${validatedData.uid}`);
       return transformUserDbRowToUserData(rows[0]);
     } catch (error) {
       console.error('Error creating user:', error);
@@ -118,7 +120,7 @@ export class UserService {
       }
       
       if (updates.defaultDurationForScheduling !== undefined) {
-        updateFields.push(`default_duration_for_scheduling = $${paramIndex++}`);
+        updateFields.push(`schedule_settings_default_duration = $${paramIndex++}`);
         values.push(updates.defaultDurationForScheduling);
       }
 
@@ -140,14 +142,14 @@ export class UserService {
       const query = `
         UPDATE users 
         SET ${updateFields.join(', ')}
-        WHERE uid = $${paramIndex}
+        WHERE firebase_uid = $${paramIndex}
         RETURNING 
-          uid,
+          firebase_uid as uid,
           email,
           display_name,
           preferences_theme,
           preferences_notifications,
-          default_duration_for_scheduling,
+          schedule_settings_default_duration as default_duration_for_scheduling,
           created_at,
           updated_at
       `;
@@ -177,30 +179,30 @@ export class UserService {
       
       const query = `
         INSERT INTO users (
-          uid,
+          firebase_uid,
           email,
           display_name,
           preferences_theme,
           preferences_notifications,
-          default_duration_for_scheduling,
+          schedule_settings_default_duration,
           created_at,
           updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (uid) 
+        ON CONFLICT (firebase_uid) 
         DO UPDATE SET
           email = EXCLUDED.email,
           display_name = EXCLUDED.display_name,
           preferences_theme = EXCLUDED.preferences_theme,
           preferences_notifications = EXCLUDED.preferences_notifications,
-          default_duration_for_scheduling = EXCLUDED.default_duration_for_scheduling,
+          schedule_settings_default_duration = EXCLUDED.schedule_settings_default_duration,
           updated_at = CURRENT_TIMESTAMP
         RETURNING 
-          uid,
+          firebase_uid as uid,
           email,
           display_name,
           preferences_theme,
           preferences_notifications,
-          default_duration_for_scheduling,
+          schedule_settings_default_duration as default_duration_for_scheduling,
           created_at,
           updated_at
       `;
@@ -232,9 +234,12 @@ export class UserService {
    */
   static async userExists(uid: string): Promise<boolean> {
     try {
-      const query = 'SELECT 1 FROM users WHERE uid = $1 LIMIT 1';
+      console.log(`🔍 [UserService.userExists] Checking existence for UID: ${uid}`);
+      const query = 'SELECT 1 FROM users WHERE firebase_uid = $1 LIMIT 1';
       const rows = await executeQuery(query, [uid]);
-      return rows.length > 0;
+      const exists = rows.length > 0;
+      console.log(`🔍 [UserService.userExists] User exists: ${exists}`);
+      return exists;
     } catch (error) {
       console.error('Error checking if user exists:', error);
       throw new Error('Failed to check user existence');
