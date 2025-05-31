@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
 
+import '../../../core/config.dart';
+
 class ScheduleEntry {
   final String type;
   final String activity;
@@ -103,8 +105,6 @@ class Dependency {
 }
 
 class ScheduleService {
-  static const String baseUrl = 'http://localhost:3000/api';
-
   Future<List<ScheduleEntry>> createScheduleEntry(String text) async {
     try {
       final response = await http.post(

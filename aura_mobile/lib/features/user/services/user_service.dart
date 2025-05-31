@@ -1,11 +1,10 @@
 import 'dart:convert';
+import 'package:aura_mobile/core/config.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  static const String baseUrl = 'http://localhost:3000/api';
-
   Future<UserData> getUserData(User firebaseUser) async {
     try {
       // Get the ID token
@@ -28,8 +27,7 @@ class UserService {
       }
 
       if (response.statusCode == 404) {
-        // If user data doesn't exist, create it
-        return await saveUserData(firebaseUser);
+        throw Exception('User not found. Please contact support.');
       }
 
       throw Exception(
@@ -40,26 +38,27 @@ class UserService {
     }
   }
 
-  Future<UserData> saveUserData(User firebaseUser) async {
+  /// Creates a new user account in the database (for signup flow)
+  Future<UserData> createUserAccount(
+    User firebaseUser, {
+    String? displayName,
+    String preferencesTheme = 'dark',
+    bool preferencesNotifications = true,
+    int defaultDurationForScheduling = 30,
+  }) async {
     try {
       final idToken = await firebaseUser.getIdToken();
 
-      // Create initial user data
+      // Create user data matching the backend schema
       final userData = {
-        'uid': firebaseUser.uid,
-        'email': firebaseUser.email,
-        'displayName': firebaseUser.displayName,
-        'preferences': {'theme': 'dark', 'notifications': true},
-        'scheduleSettings': {
-          'defaultDuration': 30,
-          'workingHours': {'start': '09:00', 'end': '17:00'},
-        },
-        'createdAt': DateTime.now().toIso8601String(),
-        'updatedAt': DateTime.now().toIso8601String(),
+        'displayName': displayName ?? firebaseUser.displayName,
+        'preferencesTheme': preferencesTheme,
+        'preferencesNotifications': preferencesNotifications,
+        'defaultDurationForScheduling': defaultDurationForScheduling,
       };
 
-      final response = await http.put(
-        Uri.parse('$baseUrl/user/${firebaseUser.uid}'),
+      final response = await http.post(
+        Uri.parse('$baseUrl/user/signup'),
         headers: {
           'Authorization': 'Bearer $idToken',
           'Content-Type': 'application/json',
@@ -67,16 +66,53 @@ class UserService {
         body: jsonEncode(userData),
       );
 
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          return UserData.fromJson(data['data']);
+        }
+        throw Exception(data['message'] ?? 'Failed to create user account');
+      }
+
+      if (response.statusCode == 409) {
+        throw Exception('User account already exists');
+      }
+
+      throw Exception(
+        jsonDecode(response.body)['error'] ?? 'Failed to create user account',
+      );
+    } catch (e) {
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
+
+  /// Updates existing user data
+  Future<UserData> updateUserData(
+    User firebaseUser,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      final idToken = await firebaseUser.getIdToken();
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/user/${firebaseUser.uid}'),
+        headers: {
+          'Authorization': 'Bearer $idToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(updates),
+      );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success']) {
           return UserData.fromJson(data['data']);
         }
-        throw Exception(data['message'] ?? 'Failed to save user data');
+        throw Exception(data['message'] ?? 'Failed to update user data');
       }
 
       throw Exception(
-        jsonDecode(response.body)['error'] ?? 'Failed to save user data',
+        jsonDecode(response.body)['error'] ?? 'Failed to update user data',
       );
     } catch (e) {
       throw Exception('Failed to connect to the server: $e');
