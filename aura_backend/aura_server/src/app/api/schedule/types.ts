@@ -38,6 +38,12 @@ export interface ParsedScheduleEntry {
   };
 }
 
+// Updated parsing response from LLM
+export interface ParsedScheduleResponse {
+  entries: ParsedScheduleEntry[];
+  originalText: string;
+}
+
 // API response types
 export interface ApiResponse<T> {
   success: boolean;
