@@ -6,6 +6,7 @@ import 'package:aura_mobile/core/services/auth_service.dart';
 import 'package:aura_mobile/features/auth/providers/auth_provider.dart';
 import 'package:aura_mobile/features/user/services/user_service.dart';
 import 'package:aura_mobile/features/user/providers/user_data_provider.dart';
+import 'package:aura_mobile/features/calendar/state/calendar_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(authService)),
         ChangeNotifierProvider(create: (_) => UserDataProvider(userService)),
+        ChangeNotifierProvider(create: (_) => CalendarState()),
       ],
       child: const AuraMobileApp(),
     ),
