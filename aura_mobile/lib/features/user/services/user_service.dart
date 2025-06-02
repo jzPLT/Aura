@@ -18,6 +18,9 @@ class UserService {
         },
       );
 
+      print('📡 Response: ${response.statusCode}');
+      print('📡 Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success']) {
@@ -27,7 +30,7 @@ class UserService {
       }
 
       if (response.statusCode == 404) {
-        throw Exception('User not found. Please contact support.');
+        throw Exception('User not found');
       }
 
       throw Exception(

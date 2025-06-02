@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/auth_service.dart';
@@ -133,11 +132,69 @@ class AuthProvider extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-      await _authService.signInWithGoogle();
 
-      // Load user data after successful sign-in
-      if (_user != null && _context != null) {
-        await _loadUserData(_user!, isNewUser: false);
+      print('🔑 Starting Google Sign-In...');
+      final userCredential = await _authService.signInWithGoogle();
+      final user = userCredential?.user;
+
+      if (user == null) {
+        print('❌ No user returned from Google Sign-In');
+        return;
+      }
+
+      print('✅ Google Sign-In successful: ${user.uid} (${user.email})');
+
+      // Try to load user data, and if user doesn't exist, create them
+      if (_context != null) {
+        final userDataProvider = _context!.read<UserDataProvider>();
+
+        try {
+          print('📡 Attempting to load user data from server...');
+          // First try to load existing user data
+          final success = await userDataProvider.loadUserData(user);
+          if (!success) {
+            try {
+              await userDataProvider.createUserAccount(user);
+              print('✅ User account created successfully');
+              if (_context!.mounted) {
+                ScaffoldMessenger.of(_context!).showSnackBar(
+                  const SnackBar(
+                    content: Text('Welcome! Your account has been created.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            } catch (createError) {
+              print('❌ Failed to create user account: $createError');
+              if (_context!.mounted) {
+                ScaffoldMessenger.of(_context!).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to create account: $createError'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+            }
+          }
+          if (_context!.mounted) {
+            ScaffoldMessenger.of(_context!).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Having trouble loading your data. Some features may be limited.',
+                ),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 5),
+              ),
+            );
+          }
+        } catch (e) {
+          print('❌ Error loading user data: $e');
+          // If user doesn't exist (404 error), create them
+        }
+      } else {
+        print('❌ No context available for user data operations');
       }
     } finally {
       _isLoading = false;
