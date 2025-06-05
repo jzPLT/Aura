@@ -10,9 +10,10 @@ const migrations = [
     display_name VARCHAR(255) NULL,
     preferences_theme VARCHAR(50) NULL,
     preferences_notifications BOOLEAN NULL,
-    default_duration_for_scheduling INTEGER NULL, -- Default duration in minutes
+    schedule_settings_default_duration INTEGER NULL, -- Default duration in minutes
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE NULL -- For soft deletes
   );
   `,
 

@@ -3,7 +3,7 @@ import path from 'path';
 import { runMigrations } from '../src/lib/db/migrations';
 
 // Load environment variables from .env file
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 async function main() {
   try {

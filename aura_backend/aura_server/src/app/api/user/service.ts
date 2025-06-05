@@ -1,6 +1,7 @@
-import { executeQuery, getClient } from '@/lib/db/pool';
+import { executeQuery } from '@/lib/db/pool';
 import { UserData, UserDbRow } from './types';
-import { transformUserDbRowToUserData, validateUserData } from './transformers';
+import pool from '@/lib/db/pool';
+import { validateUserData, transformUserDbRowToUserData } from './transformers';
 
 export class UserService {
   /**
@@ -10,7 +11,7 @@ export class UserService {
     try {
       const query = `
         SELECT 
-          firebase_uid as uid,
+          uid,
           email,
           display_name,
           preferences_theme,
@@ -19,7 +20,7 @@ export class UserService {
           created_at,
           updated_at
         FROM users 
-        WHERE firebase_uid = $1
+        WHERE uid = $1
       `;
       
       const rows = await executeQuery<UserDbRow>(query, [uid]);
@@ -46,7 +47,7 @@ export class UserService {
       
       const query = `
         INSERT INTO users (
-          firebase_uid,
+          uid,
           email,
           display_name,
           preferences_theme,
@@ -56,7 +57,7 @@ export class UserService {
           updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING 
-          firebase_uid as uid,
+          uid,
           email,
           display_name,
           preferences_theme,
@@ -142,9 +143,9 @@ export class UserService {
       const query = `
         UPDATE users 
         SET ${updateFields.join(', ')}
-        WHERE firebase_uid = $${paramIndex}
+        WHERE uid = $${paramIndex}
         RETURNING 
-          firebase_uid as uid,
+          uid,
           email,
           display_name,
           preferences_theme,
@@ -179,7 +180,7 @@ export class UserService {
       
       const query = `
         INSERT INTO users (
-          firebase_uid,
+          uid,
           email,
           display_name,
           preferences_theme,
@@ -188,7 +189,7 @@ export class UserService {
           created_at,
           updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (firebase_uid) 
+        ON CONFLICT (uid) 
         DO UPDATE SET
           email = EXCLUDED.email,
           display_name = EXCLUDED.display_name,
@@ -197,7 +198,7 @@ export class UserService {
           schedule_settings_default_duration = EXCLUDED.schedule_settings_default_duration,
           updated_at = CURRENT_TIMESTAMP
         RETURNING 
-          firebase_uid as uid,
+          uid,
           email,
           display_name,
           preferences_theme,
@@ -235,7 +236,7 @@ export class UserService {
   static async userExists(uid: string): Promise<boolean> {
     try {
       console.log(`🔍 [UserService.userExists] Checking existence for UID: ${uid}`);
-      const query = 'SELECT 1 FROM users WHERE firebase_uid = $1 LIMIT 1';
+      const query = 'SELECT 1 FROM users WHERE uid = $1 LIMIT 1';
       const rows = await executeQuery(query, [uid]);
       const exists = rows.length > 0;
       console.log(`🔍 [UserService.userExists] User exists: ${exists}`);
@@ -243,6 +244,148 @@ export class UserService {
     } catch (error) {
       console.error('Error checking if user exists:', error);
       throw new Error('Failed to check user existence');
+    }
+  }
+
+  /**
+   * Hard delete a user by removing them from the database
+   */
+  static async deleteUser(uid: string): Promise<void> {
+    try {
+      console.log(`🗑️ [UserService.deleteUser] Attempting to delete user UID: ${uid}`);
+      
+      // First, check if the user exists
+      const existingUserQuery = `
+        SELECT uid FROM users WHERE uid = $1
+      `;
+      const existingUserRows = await executeQuery<{ uid: string }>(existingUserQuery, [uid]);
+
+      if (existingUserRows.length === 0) {
+        console.warn(`⚠️ [UserService.deleteUser] User not found for UID: ${uid}`);
+        throw new Error('User not found');
+      }
+
+      // If user exists, proceed with hard deletion
+      const query = `
+        DELETE FROM users 
+        WHERE uid = $1
+        RETURNING uid
+      `;
+      
+      const rows = await executeQuery<{ uid: string }>(query, [uid]);
+      
+      if (rows.length === 0) {
+        console.error(`❌ [UserService.deleteUser] Failed to delete user for UID: ${uid}`);
+        throw new Error('User deletion failed');
+      }
+      
+      console.log(`✅ [UserService.deleteUser] User deleted successfully for UID: ${uid}`);
+    } catch (error) {
+      console.error(`❌ [UserService.deleteUser] Error deleting user for UID ${uid}:`, error);
+      if (error instanceof Error && error.message.includes('User not found')) {
+        throw error; // Re-throw specific errors for the route handler
+      }
+      throw new Error('Failed to delete user');
+    }
+  }
+
+  /**
+   * Upsert user on login
+   * Handles user creation and updates considering potential conflicts.
+   */
+  static async upsertUserOnLogin(uid: string, email: string, displayName: string | null): Promise<UserDbRow> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { rows: emailMatchRows } = await client.query<UserDbRow>(
+        `SELECT * FROM users WHERE email = $1`,
+        [email]
+      );
+      const existingUserByEmail = emailMatchRows[0] || null;
+
+      const { rows: uidMatchRows } = await client.query<UserDbRow>(
+        `SELECT * FROM users WHERE uid = $1`,
+        [uid]
+      );
+      const existingUserByUid = uidMatchRows[0] || null;
+
+      let userToReturn: UserDbRow;
+
+      if (existingUserByEmail) {
+        // Email exists in database
+        if (existingUserByEmail.uid === uid) {
+          // Case A: Email exists and UID matches. Standard update.
+          const { rows: updatedRows } = await client.query<UserDbRow>(
+            `UPDATE users SET display_name = $1, updated_at = NOW()
+             WHERE uid = $2 AND email = $3 RETURNING *`,
+            [displayName, uid, email]
+          );
+          if (updatedRows.length === 0) {
+            await client.query('ROLLBACK');
+            throw new Error('Failed to update active user details.');
+          }
+          userToReturn = updatedRows[0];
+        } else {
+          // Case B: Email exists but UID is different. Conflict.
+          await client.query('ROLLBACK');
+          throw new Error('Email_Conflict: Email is already in use by another account.');
+        }
+      } else {
+        // Email does not exist in database
+        if (existingUserByUid) {
+          // Case C: Email does not exist, but UID exists.
+          // User exists with this UID but with a different email; update to new email.
+          const { rows: updatedRows } = await client.query<UserDbRow>(
+            `UPDATE users SET email = $1, display_name = $2, updated_at = NOW()
+             WHERE uid = $3 RETURNING *`,
+            [email, displayName, uid]
+          );
+          if (updatedRows.length === 0) {
+            await client.query('ROLLBACK');
+            throw new Error('Failed to update email for existing user.');
+          }
+          userToReturn = updatedRows[0];
+        } else {
+          // Case D: Email does not exist, UID does not exist. Clean new user creation.
+          const scheduleSettingsDefaultDuration = 30; // Default value
+          const { rows: createdRows } = await client.query<UserDbRow>(
+            `INSERT INTO users (uid, email, display_name, schedule_settings_default_duration)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [uid, email, displayName, scheduleSettingsDefaultDuration]
+          );
+          if (createdRows.length === 0) {
+            await client.query('ROLLBACK');
+            throw new Error('Failed to create new user.');
+          }
+          userToReturn = createdRows[0];
+        }
+      }
+
+      await client.query('COMMIT');
+      return userToReturn;
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      // Log the error for debugging
+      console.error('Error in upsertUserOnLogin:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('users_email_key')) {
+          throw new Error('Email_Conflict: This email address is already registered.');
+        }
+        if (error.message.includes('users_uid_key')) {
+          throw new Error('UID_Conflict: This user identifier is already registered with a different email.');
+        }
+        // Re-throw specific errors caught in the logic
+        if (error.message.startsWith('Email_Conflict:') || error.message.startsWith('UID_Conflict:')) {
+          throw error;
+        }
+      }
+      // Fallback for other errors
+      throw new Error('An unexpected error occurred during user processing.');
+    } finally {
+      client.release();
     }
   }
 }
