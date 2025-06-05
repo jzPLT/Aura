@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserData } from '../types';
 import { auth } from '@/lib/firebase/admin';
 import { UserService } from '../service';
+import { UserTransactionService } from '../transaction-service';
 
 export async function GET(
   request: NextRequest,
@@ -164,8 +165,10 @@ export async function DELETE(
         );
       }
 
-      // Hard delete the user
-      await UserService.deleteUser(uid);
+      // Atomically delete user from both database and Firebase Auth
+      console.log(`🗑️ Starting atomic user deletion for: ${uid}`);
+      await UserTransactionService.deleteUserAtomic(uid);
+      console.log(`✅ Atomic user deletion completed for: ${uid}`);
 
       return NextResponse.json({
         success: true,

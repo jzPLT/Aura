@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../features/user/providers/user_data_provider.dart';
+import '../../../features/user/services/user_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -119,6 +120,14 @@ class AuthProvider extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
+
+      // Check system health before proceeding
+      final isHealthy = await _checkSystemHealth();
+      if (!isHealthy) {
+        throw Exception(
+          'System is temporarily unavailable. Please try again later.',
+        );
+      }
 
       // Create Firebase Auth user
       await _authService.signUpWithEmailPassword(email, password);
@@ -295,22 +304,99 @@ class AuthProvider extends ChangeNotifier {
         throw Exception('User not logged in');
       }
 
-      // Call UserService to soft delete user from backend
+      // Check system health before proceeding with deletion
+      final isHealthy = await _checkSystemHealth();
+      if (!isHealthy) {
+        throw Exception(
+          'Cannot delete account while system is unavailable. Please try again later.',
+        );
+      }
+
+      print('🗑️ Starting atomic account deletion...');
+
+      // Call backend to atomically delete from both database and Firebase Auth
+      // The backend handles both operations to ensure consistency
       await _context!.read<UserDataProvider>().deleteUserAccount(_user!);
 
-      // Then delete from Firebase Auth
-      await _authService.deleteAccount();
+      print('✅ Account deletion completed successfully');
 
-      // Sign out locally
+      // Clear local user data
       _user = null;
       _context!.read<UserDataProvider>().clearUserData();
-      // No need to call _authService.signOut() as deleteAccount() handles it.
+
+      // The user should now be signed out automatically since Firebase Auth user was deleted
     } catch (e) {
-      // Potentially rethrow or handle specific errors for UI
+      print('❌ Account deletion failed: $e');
+      // If deletion fails, we need to check if it was a partial failure
+      if (e.toString().contains('Critical:')) {
+        // This indicates a system inconsistency that requires manual intervention
+        if (_context != null && _context!.mounted) {
+          ScaffoldMessenger.of(_context!).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Account deletion encountered a system error. Please contact support. Error: ${e.toString()}',
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 10),
+            ),
+          );
+        }
+      }
       rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Verify system health before performing critical operations
+  Future<bool> _checkSystemHealth() async {
+    try {
+      final userService = UserService();
+      final healthStatus = await userService.checkSystemHealth();
+
+      if (!healthStatus['success']) {
+        print('⚠️ System health check failed: ${healthStatus['error']}');
+        if (_context != null && _context!.mounted) {
+          ScaffoldMessenger.of(_context!).showSnackBar(
+            SnackBar(
+              content: Text(
+                'System temporarily unavailable. Please try again later.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return false;
+      }
+
+      final services = healthStatus['services'] as Map<String, dynamic>?;
+      final isFirebaseHealthy = services?['firebase']?['connected'] == true;
+      final isDatabaseHealthy = services?['database']?['connected'] == true;
+
+      if (!isFirebaseHealthy || !isDatabaseHealthy) {
+        print(
+          '⚠️ Some services are unhealthy - Firebase: $isFirebaseHealthy, Database: $isDatabaseHealthy',
+        );
+        if (_context != null && _context!.mounted) {
+          ScaffoldMessenger.of(_context!).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Some services are temporarily unavailable. Account operations may fail.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      print('❌ Health check error: $e');
+      return false; // Fail safe - don't allow operations if we can't verify health
     }
   }
 }

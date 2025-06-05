@@ -122,7 +122,8 @@ class UserService {
     }
   }
 
-  /// Deletes a user account from the database (soft delete)
+  /// Deletes a user account atomically from both database and Firebase Auth
+  /// The backend handles both operations to ensure consistency
   Future<void> deleteUserAccount(User firebaseUser) async {
     try {
       final idToken = await firebaseUser.getIdToken();
@@ -151,6 +152,32 @@ class UserService {
       );
     } catch (e) {
       throw Exception('Failed to connect to the server: $e');
+    }
+  }
+
+  /// Check system health (Firebase and database connectivity)
+  Future<Map<String, dynamic>> checkSystemHealth() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/health'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 503) {
+        return jsonDecode(response.body);
+      }
+
+      return {
+        'success': false,
+        'error': 'Health check endpoint returned ${response.statusCode}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to connect to health check endpoint: $e',
+      };
     }
   }
 }
