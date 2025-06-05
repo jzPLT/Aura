@@ -8,7 +8,6 @@ export interface UserData {
   defaultDurationForScheduling?: number; // Default duration in minutes
   createdAt: string;  // ISO date string
   updatedAt: string;  // ISO date string
-  deletedAt?: string | null; // Add optional deleted_at field
 }
 
 // Static entries - recurring patterns or fixed events
@@ -104,7 +103,6 @@ export interface UserRow {
   default_duration_for_scheduling: number | null;
   created_at: Date;
   updated_at: Date;
-  deleted_at?: Date | null; // Add optional deleted_at field
 }
 
 export interface StaticEntryRow {
@@ -118,7 +116,6 @@ export interface StaticEntryRow {
   frequency_period: string;
   created_at: Date;
   updated_at: Date;
-  deleted_at: Date | null;
 }
 
 export interface DynamicEntryRow {
@@ -134,7 +131,6 @@ export interface DynamicEntryRow {
   dependency_type: string | null;
   created_at: Date;
   updated_at: Date;
-  deleted_at: Date | null;
 }
 
 export interface ResultingEntryRow {
@@ -147,7 +143,6 @@ export interface ResultingEntryRow {
   ending_datetime: Date;
   created_at: Date;
   updated_at: Date;
-  deleted_at: Date | null;
 }
 
 // Alias for consistency with service usage

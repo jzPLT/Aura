@@ -13,7 +13,6 @@ const migrations = [
     schedule_settings_default_duration INTEGER NULL, -- Default duration in minutes
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE NULL -- For soft deletes
   );
   `,
 
@@ -30,7 +29,6 @@ const migrations = [
     frequency_period VARCHAR(10) NOT NULL DEFAULT 'never', -- 'day', 'week', 'month', 'year', 'never'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE NULL -- For soft deletes
   );
   `,
 
@@ -52,7 +50,6 @@ const migrations = [
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE NULL -- For soft deletes
   );
   `,
 
@@ -72,7 +69,6 @@ const migrations = [
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE NULL, -- For soft deletes
 
     -- Constraint to ensure an origin is linked
     CONSTRAINT chk_origin_link CHECK (origin_static_entry_id IS NOT NULL OR origin_dynamic_entry_id IS NOT NULL)

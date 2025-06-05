@@ -85,7 +85,6 @@ export function staticEntryRowToStaticEntry(row: StaticEntryRow): StaticEntry {
     frequencyPeriod: row.frequency_period as 'day' | 'week' | 'month' | 'year' | 'never',
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
-    deletedAt: row.deleted_at?.toISOString(),
   };
 }
 
@@ -117,7 +116,6 @@ export function dynamicEntryRowToDynamicEntry(row: DynamicEntryRow): DynamicEntr
     dependencyType: row.dependency_type as any || undefined,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
-    deletedAt: row.deleted_at?.toISOString(),
   };
 }
 
@@ -148,7 +146,6 @@ export function resultingEntryRowToResultingEntry(row: ResultingEntryRow): Resul
     endingDatetime: row.ending_datetime.toISOString(),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
-    deletedAt: row.deleted_at?.toISOString(),
   };
 }
 
