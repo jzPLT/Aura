@@ -130,15 +130,6 @@ class AuthService {
     }
   }
 
-  // Check available sign-in methods for an email
-  Future<List<String>> getSignInMethodsForEmail(String email) async {
-    try {
-      return await _auth.fetchSignInMethodsForEmail(email);
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
-  }
-
   // Helper method to handle Firebase Auth Exceptions
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {

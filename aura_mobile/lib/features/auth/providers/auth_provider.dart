@@ -275,16 +275,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Check what sign-in methods are available for an email
-  Future<List<String>> getSignInMethodsForEmail(String email) async {
-    try {
-      return await _authService.getSignInMethodsForEmail(email);
-    } catch (e) {
-      // Return empty list if there's an error checking
-      return [];
-    }
-  }
-
   Future<void> resetPassword(String email) async {
     try {
       _isLoading = true;
