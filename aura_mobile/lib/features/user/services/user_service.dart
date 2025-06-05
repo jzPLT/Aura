@@ -121,4 +121,36 @@ class UserService {
       throw Exception('Failed to connect to the server: $e');
     }
   }
+
+  /// Deletes a user account from the database (soft delete)
+  Future<void> deleteUserAccount(User firebaseUser) async {
+    try {
+      final idToken = await firebaseUser.getIdToken();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/user/${firebaseUser.uid}'),
+        headers: {
+          'Authorization': 'Bearer $idToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          return;
+        }
+        throw Exception(data['message'] ?? 'Failed to delete user account');
+      }
+
+      if (response.statusCode == 404) {
+        throw Exception('User not found');
+      }
+
+      throw Exception(
+        jsonDecode(response.body)['error'] ?? 'Failed to delete user account',
+      );
+    } catch (e) {
+      throw Exception('Failed to connect to the server: $e');
+    }
+  }
 }

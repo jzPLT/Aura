@@ -128,4 +128,24 @@ class UserDataProvider extends ChangeNotifier {
         errorMessage.contains('bad request') ||
         errorMessage.contains('400');
   }
+
+  /// Deletes user account (soft delete)
+  Future<bool> deleteUserAccount(User firebaseUser) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _userService.deleteUserAccount(firebaseUser);
+      _userData = null; // Clear local user data as well
+      _error = null;
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

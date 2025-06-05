@@ -266,7 +266,24 @@ class AuthProvider extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
+
+      if (_user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Call UserService to soft delete user from backend
+      await _context!.read<UserDataProvider>().deleteUserAccount(_user!);
+
+      // Then delete from Firebase Auth
       await _authService.deleteAccount();
+
+      // Sign out locally
+      _user = null;
+      _context!.read<UserDataProvider>().clearUserData();
+      // No need to call _authService.signOut() as deleteAccount() handles it.
+    } catch (e) {
+      // Potentially rethrow or handle specific errors for UI
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
