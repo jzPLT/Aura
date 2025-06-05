@@ -90,6 +90,18 @@ class AuthProvider extends ChangeNotifier {
       if (_user != null && _context != null) {
         await _loadUserData(_user!, isNewUser: false);
       }
+    } catch (e) {
+      // Show specific error message to user
+      if (_context != null && _context!.mounted) {
+        ScaffoldMessenger.of(_context!).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      rethrow; // Re-throw so UI can handle it if needed
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -122,6 +134,18 @@ class AuthProvider extends ChangeNotifier {
           defaultDurationForScheduling: defaultDurationForScheduling,
         );
       }
+    } catch (e) {
+      // Show specific error message to user
+      if (_context != null && _context!.mounted) {
+        ScaffoldMessenger.of(_context!).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      rethrow; // Re-throw so UI can handle it if needed
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -248,6 +272,16 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // Check what sign-in methods are available for an email
+  Future<List<String>> getSignInMethodsForEmail(String email) async {
+    try {
+      return await _authService.getSignInMethodsForEmail(email);
+    } catch (e) {
+      // Return empty list if there's an error checking
+      return [];
     }
   }
 

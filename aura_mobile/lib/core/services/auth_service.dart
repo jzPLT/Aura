@@ -17,6 +17,19 @@ class AuthService {
     String password,
   ) async {
     try {
+      // Check if the email is already registered with other methods
+      final signInMethods = await _auth.fetchSignInMethodsForEmail(email);
+
+      if (signInMethods.isNotEmpty) {
+        if (signInMethods.contains('google.com')) {
+          throw 'This email is already registered with Google Sign-In. Please use "Sign in with Google" instead.';
+        } else if (signInMethods.contains('password')) {
+          throw 'An account already exists with this email address. Please sign in instead.';
+        } else {
+          throw 'This email is already registered with a different sign-in method.';
+        }
+      }
+
       return await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -32,6 +45,23 @@ class AuthService {
     String password,
   ) async {
     try {
+      // First check what sign-in methods are available for this email
+      final signInMethods = await _auth.fetchSignInMethodsForEmail(email);
+
+      // If no sign-in methods exist, the email is not registered
+      if (signInMethods.isEmpty) {
+        throw 'No account found with this email address.';
+      }
+
+      // If email/password is not available but other methods exist
+      if (!signInMethods.contains('password')) {
+        if (signInMethods.contains('google.com')) {
+          throw 'This email is registered with Google Sign-In. Please use "Sign in with Google" instead.';
+        } else {
+          throw 'This email is registered with a different sign-in method. Password sign-in is not available.';
+        }
+      }
+
       return await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -100,21 +130,40 @@ class AuthService {
     }
   }
 
+  // Check available sign-in methods for an email
+  Future<List<String>> getSignInMethodsForEmail(String email) async {
+    try {
+      return await _auth.fetchSignInMethodsForEmail(email);
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
   // Helper method to handle Firebase Auth Exceptions
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
-        return 'No user found with this email.';
+        return 'No account found with this email address.';
       case 'wrong-password':
-        return 'Wrong password provided.';
+        return 'Incorrect password. Please try again or reset your password.';
       case 'email-already-in-use':
-        return 'An account already exists with this email.';
+        return 'An account already exists with this email address.';
       case 'weak-password':
-        return 'The password provided is too weak.';
+        return 'Password is too weak. Please choose a stronger password.';
       case 'invalid-email':
-        return 'The email address is invalid.';
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      case 'operation-not-allowed':
+        return 'This sign-in method is not enabled. Please contact support.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email using a different sign-in method.';
+      case 'invalid-credential':
+        return 'The provided credentials are invalid or have expired.';
       default:
-        return e.message ?? 'An error occurred during authentication.';
+        return e.message ?? 'An unexpected error occurred. Please try again.';
     }
   }
 }
