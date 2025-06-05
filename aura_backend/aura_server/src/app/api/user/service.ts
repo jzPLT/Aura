@@ -1,7 +1,7 @@
 import { executeQuery } from '@/lib/db/pool';
-import { UserData, UserDbRow } from './types';
+import { UserData, UserDbRow, StaticEntry, DynamicEntry, StaticEntryRow, DynamicEntryRow } from './types';
 import pool from '@/lib/db/pool';
-import { validateUserData, transformUserDbRowToUserData } from './transformers';
+import { validateUserData, transformUserDbRowToUserData, staticEntryRowToStaticEntry, dynamicEntryRowToDynamicEntry, staticEntryToStaticEntryRow, dynamicEntryToDynamicEntryRow } from './transformers';
 
 export class UserService {
   /**
@@ -386,6 +386,124 @@ export class UserService {
       throw new Error('An unexpected error occurred during user processing.');
     } finally {
       client.release();
+    }
+  }
+
+  /**
+   * Create a new static entry
+   */
+  static async createStaticEntry(entry: Omit<StaticEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<StaticEntry> {
+    try {
+      console.log(`🔍 [UserService.createStaticEntry] Creating static entry for user: ${entry.userUid}`);
+      
+      const query = `
+        INSERT INTO static_entries (
+          user_uid,
+          original_input_text,
+          description,
+          starting_datetime,
+          ending_datetime,
+          frequency_per_period,
+          frequency_period,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING 
+          id,
+          user_uid,
+          original_input_text,
+          description,
+          starting_datetime,
+          ending_datetime,
+          frequency_per_period,
+          frequency_period,
+          created_at,
+          updated_at
+      `;
+      
+      const values = [
+        entry.userUid,
+        entry.originalInputText || null,
+        entry.description,
+        entry.startingDatetime ? new Date(entry.startingDatetime) : null,
+        entry.endingDatetime ? new Date(entry.endingDatetime) : null,
+        entry.frequencyPerPeriod || null,
+        entry.frequencyPeriod,
+      ];
+      
+      const rows = await executeQuery<StaticEntryRow>(query, values);
+      
+      if (rows.length === 0) {
+        throw new Error('Static entry creation failed - no data returned');
+      }
+      
+      console.log(`✅ [UserService.createStaticEntry] Static entry created successfully: ${rows[0].id}`);
+      return staticEntryRowToStaticEntry(rows[0]);
+    } catch (error) {
+      console.error('Error creating static entry:', error);
+      throw new Error('Failed to create static entry');
+    }
+  }
+
+  /**
+   * Create a new dynamic entry
+   */
+  static async createDynamicEntry(entry: Omit<DynamicEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<DynamicEntry> {
+    try {
+      console.log(`🔍 [UserService.createDynamicEntry] Creating dynamic entry for user: ${entry.userUid}`);
+      
+      const query = `
+        INSERT INTO dynamic_entries (
+          user_uid,
+          original_input_text,
+          description_of_entry,
+          starting_datetime,
+          ending_datetime,
+          frequency_per_period,
+          frequency_period,
+          dependency_name,
+          dependency_type,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING 
+          id,
+          user_uid,
+          original_input_text,
+          description_of_entry,
+          starting_datetime,
+          ending_datetime,
+          frequency_per_period,
+          frequency_period,
+          dependency_name,
+          dependency_type,
+          created_at,
+          updated_at
+      `;
+      
+      const values = [
+        entry.userUid,
+        entry.originalInputText || null,
+        entry.descriptionOfEntry,
+        entry.startingDatetime ? new Date(entry.startingDatetime) : null,
+        entry.endingDatetime ? new Date(entry.endingDatetime) : null,
+        entry.frequencyPerPeriod || null,
+        entry.frequencyPeriod || null,
+        entry.dependencyName || null,
+        entry.dependencyType || null,
+      ];
+      
+      const rows = await executeQuery<DynamicEntryRow>(query, values);
+      
+      if (rows.length === 0) {
+        throw new Error('Dynamic entry creation failed - no data returned');
+      }
+      
+      console.log(`✅ [UserService.createDynamicEntry] Dynamic entry created successfully: ${rows[0].id}`);
+      return dynamicEntryRowToDynamicEntry(rows[0]);
+    } catch (error) {
+      console.error('Error creating dynamic entry:', error);
+      throw new Error('Failed to create dynamic entry');
     }
   }
 }
