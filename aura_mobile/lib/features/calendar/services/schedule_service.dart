@@ -6,26 +6,28 @@ import '../../../core/config.dart';
 
 class ScheduleEntry {
   final String type;
-  final String activity;
-  final String? datetime;
-  final Schedule? schedule;
+  final String description;
+  final String? startingDatetime;
+  final Frequency? frequency;
   final Dependency? dependsOn;
 
   ScheduleEntry({
     required this.type,
-    required this.activity,
-    this.datetime,
-    this.schedule,
+    required this.description,
+    this.startingDatetime,
+    this.frequency,
     this.dependsOn,
   });
 
   factory ScheduleEntry.fromJson(Map<String, dynamic> json) {
     return ScheduleEntry(
       type: json['type'],
-      activity: json['activity'],
-      datetime: json['datetime'],
-      schedule:
-          json['schedule'] != null ? Schedule.fromJson(json['schedule']) : null,
+      description: json['description'],
+      startingDatetime: json['startingDatetime'],
+      frequency:
+          json['frequency'] != null
+              ? Frequency.fromJson(json['frequency'])
+              : null,
       dependsOn:
           json['dependsOn'] != null
               ? Dependency.fromJson(json['dependsOn'])
@@ -36,56 +38,26 @@ class ScheduleEntry {
   Map<String, dynamic> toJson() {
     return {
       'type': type,
-      'activity': activity,
-      if (datetime != null) 'datetime': datetime,
-      if (schedule != null) 'schedule': schedule!.toJson(),
+      'description': description,
+      if (startingDatetime != null) 'startingDatetime': startingDatetime,
+      if (frequency != null) 'frequency': frequency!.toJson(),
       if (dependsOn != null) 'dependsOn': dependsOn!.toJson(),
     };
   }
 }
 
-class Schedule {
-  final List<String>? days;
-  final String? startTime;
-  final String? endTime;
-  final Frequency? frequency;
-
-  Schedule({this.days, this.startTime, this.endTime, this.frequency});
-
-  factory Schedule.fromJson(Map<String, dynamic> json) {
-    return Schedule(
-      days: json['days'] != null ? List<String>.from(json['days']) : null,
-      startTime: json['startTime'],
-      endTime: json['endTime'],
-      frequency:
-          json['frequency'] != null
-              ? Frequency.fromJson(json['frequency'])
-              : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      if (days != null) 'days': days,
-      if (startTime != null) 'startTime': startTime,
-      if (endTime != null) 'endTime': endTime,
-      if (frequency != null) 'frequency': frequency!.toJson(),
-    };
-  }
-}
-
 class Frequency {
-  final int times;
+  final int perPeriod;
   final String period;
 
-  Frequency({required this.times, required this.period});
+  Frequency({required this.perPeriod, required this.period});
 
   factory Frequency.fromJson(Map<String, dynamic> json) {
-    return Frequency(times: json['times'], period: json['period']);
+    return Frequency(perPeriod: json['perPeriod'], period: json['period']);
   }
 
   Map<String, dynamic> toJson() {
-    return {'times': times, 'period': period};
+    return {'perPeriod': perPeriod, 'period': period};
   }
 }
 
@@ -114,11 +86,11 @@ class ScheduleService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final Map<String, dynamic> data = jsonDecode(response.body);
         if (data['success']) {
-          return (data['entries'] as List)
-              .map((entry) => ScheduleEntry.fromJson(entry))
-              .toList();
+          final List<dynamic> entries = data['data']['entries'];
+
+          return entries.map((entry) => ScheduleEntry.fromJson(entry)).toList();
         }
         log(data.toString());
       }

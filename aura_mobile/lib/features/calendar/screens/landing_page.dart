@@ -323,10 +323,12 @@ class _LandingPageState extends State<LandingPage>
 
                           try {
                             final scheduleService = ScheduleService();
-                            final entry = await scheduleService
-                                .createScheduleEntry(_notesController.text);
+                            final List<ScheduleEntry> entry =
+                                await scheduleService.createScheduleEntry(
+                                  _notesController.text,
+                                );
 
-                            // calendarState.addScheduleEntries(entry);
+                            calendarState.addScheduleEntries(entry);
                             _notesController.clear();
 
                             if (!mounted) return;

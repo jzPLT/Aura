@@ -1,12 +1,12 @@
+import 'package:aura_mobile/features/calendar/services/schedule_service.dart';
 import 'package:flutter/material.dart';
-import 'package:calendar_day_view/calendar_day_view.dart';
 
 class CalendarState extends ChangeNotifier {
-  List<DayEvent<String>> _scheduleEntries = [];
+  List<ScheduleEntry> _scheduleEntries = [];
   bool _isLoading = false;
   String? _error;
 
-  List<DayEvent<String>> get scheduleEntries => _scheduleEntries;
+  List<ScheduleEntry> get scheduleEntries => _scheduleEntries;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -20,12 +20,12 @@ class CalendarState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addScheduleEntries(List<DayEvent<String>> entries) {
+  void addScheduleEntries(List<ScheduleEntry> entries) {
     _scheduleEntries.addAll(entries);
     notifyListeners();
   }
 
-  void setScheduleEntries(List<DayEvent<String>> entries) {
+  void setScheduleEntries(List<ScheduleEntry> entries) {
     _scheduleEntries = entries;
     notifyListeners();
   }

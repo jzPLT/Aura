@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/services/auth_service.dart';
 import '../../../features/user/providers/user_data_provider.dart';
 import '../../../features/user/services/user_service.dart';
+import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
