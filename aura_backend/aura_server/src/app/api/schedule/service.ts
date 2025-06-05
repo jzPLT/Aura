@@ -23,7 +23,13 @@ export async function processWithLLM(text: string): Promise<ParsedScheduleRespon
     5. Do not invent or assume any information not present in the input
     6. Return an array of entries if multiple activities are mentioned
     7. **CRITICAL**: If an activity has a specific time (like "at 2pm", "at 9am"), DO NOT include a dependency field even if dependency words (like "after", "before") are mentioned
-    
+    8. **SPECIFIC DAY SCHEDULING**: When someone mentions specific days with a frequency (e.g., "gym twice a week on Tuesday and Thursday"), create separate entries for each mentioned day:
+       - Calculate the next occurrence of each specified day starting from today
+       - Create one entry per specified day with frequency 1 per week
+       - Use the calculated date for each day as the startingDatetime
+       - If no specific time is mentioned, use the current time
+    9. If no specific time is mentioned, use the current time for startingDatetime
+
     JSON Structure:
     {
       "entries": [
@@ -70,6 +76,11 @@ export async function processWithLLM(text: string): Promise<ParsedScheduleRespon
     - "twice a week" = 2 times per week
     - "3 times per week" = 3 times per week
     - For "after work" dependencies, only include if work hours/schedule is mentioned
+    
+    **SPECIFIC DAY HANDLING**: 
+    - When specific days are mentioned (e.g., "on Tuesday and Thursday", "Monday, Wednesday, Friday"), create separate entries for each day
+    - Each entry should have frequency 1 per week (not the total frequency across all days)
+    - Calculate the next occurrence of each mentioned day from today's date
 
     Example inputs and outputs:
     
@@ -241,6 +252,63 @@ export async function processWithLLM(text: string): Promise<ParsedScheduleRespon
           "type": "after"
         }
       }]
+    }
+
+    Input: "I want to go to the gym twice a week on Tuesday and Thursday"
+    {
+      "entries": [
+        {
+          "type": "static",
+          "description": "Gym",
+          "startingDatetime": "2025-06-10T00:00:00",
+          "frequency": {
+            "perPeriod": 1,
+            "period": "week"
+          }
+        },
+        {
+          "type": "static",
+          "description": "Gym",
+          "startingDatetime": "2025-06-12T00:00:00",
+          "frequency": {
+            "perPeriod": 1,
+            "period": "week"
+          }
+        }
+      ]
+    }
+
+    Input: "Workout on Monday, Wednesday, and Friday at 7am"
+    {
+      "entries": [
+        {
+          "type": "static",
+          "description": "Workout",
+          "startingDatetime": "2025-06-09T07:00:00",
+          "frequency": {
+            "perPeriod": 1,
+            "period": "week"
+          }
+        },
+        {
+          "type": "static",
+          "description": "Workout",
+          "startingDatetime": "2025-06-11T07:00:00",
+          "frequency": {
+            "perPeriod": 1,
+            "period": "week"
+          }
+        },
+        {
+          "type": "static",
+          "description": "Workout",
+          "startingDatetime": "2025-06-13T07:00:00",
+          "frequency": {
+            "perPeriod": 1,
+            "period": "week"
+          }
+        }
+      ]
     }
 
     Now, parse this input into the exact same format:
